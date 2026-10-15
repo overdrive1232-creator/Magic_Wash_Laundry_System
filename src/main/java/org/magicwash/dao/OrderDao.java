@@ -56,6 +56,32 @@ public class OrderDao {
         return orders;
     }
 
+    public List<LaundryOrder> getOrdersByCustomer(int customerId) {
+        List<LaundryOrder> orders = new ArrayList<>();
+        String query = "SELECT * FROM laundry_orders WHERE customer_id = ?";
+        try (Connection conn = DatabaseConnection.getConnection();
+             PreparedStatement pstmt = conn.prepareStatement(query)) {
+            pstmt.setInt(1, customerId);
+            try (ResultSet rs = pstmt.executeQuery()) {
+                while (rs.next()) {
+                    orders.add(new LaundryOrder(
+                            rs.getInt("order_id"),
+                            rs.getInt("customer_id"),
+                            rs.getString("service_type"),
+                            rs.getDouble("weight_kg"),
+                            rs.getDouble("total_amount"),
+                            rs.getString("order_status"),
+                            rs.getString("order_date"),
+                            rs.getInt("processed_by_user_id")
+                    ));
+                }
+            }
+        } catch (SQLException e) {
+            System.err.println("Error fetching orders for customer: " + e.getMessage());
+        }
+        return orders;
+    }
+
     public boolean updateOrderStatus(int orderId, String newStatus) {
         String query = "UPDATE laundry_orders SET order_status = ? WHERE order_id = ?";
         try (Connection conn = DatabaseConnection.getConnection();

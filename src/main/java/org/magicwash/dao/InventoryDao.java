@@ -58,4 +58,15 @@ public class InventoryDao {
             return false;
         }
     }
+    public boolean deleteInventoryItem(int itemId) {
+        String query = "DELETE FROM inventory_items WHERE item_id = ?";
+        try (Connection conn = DatabaseConnection.getConnection();
+             PreparedStatement pstmt = conn.prepareStatement(query)) {
+            pstmt.setInt(1, itemId);
+            return pstmt.executeUpdate() > 0;
+        } catch (SQLException e) {
+            System.err.println("Error deleting inventory item: " + e.getMessage());
+            return false;
+        }
+    }
 }

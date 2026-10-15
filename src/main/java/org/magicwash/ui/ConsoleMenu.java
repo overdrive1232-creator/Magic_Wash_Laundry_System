@@ -97,14 +97,16 @@ public class ConsoleMenu {
                 System.out.println("[1] Register New Customer");
                 System.out.println("[2] Create Laundry Order");
                 System.out.println("[3] View & Update Order Status");
-                System.out.println("[4] Cancel/Delete Pending Order");
-                System.out.println("[5] Logout");
+                System.out.println("[4] View Customer Transaction History");
+                System.out.println("[5] Cancel/Delete Pending Order");
+                System.out.println("[6] Logout");
             } else {
                 // Inventory Staff Dashboard Options
                 System.out.println("[1] View Inventory Stock Levels");
                 System.out.println("[2] Add New Inventory Item");
                 System.out.println("[3] Restock / Update Item Quantity");
-                System.out.println("[4] Logout");
+                System.out.println("[4] Delete Inventory Item");
+                System.out.println("[5] Logout");
             }
 
             System.out.print("Choice: ");
@@ -123,8 +125,9 @@ public class ConsoleMenu {
                 if (choice.equals("1")) handleAddCustomer();
                 else if (choice.equals("2")) handleCreateOrder(user.userId());
                 else if (choice.equals("3")) handleViewAndUpdateOrders();
-                else if (choice.equals("4")) handleDeleteOrder();
-                else if (choice.equals("5")) {
+                else if (choice.equals("4")) handleViewCustomerTransactions();
+                else if (choice.equals("5")) handleDeleteOrder();
+                else if (choice.equals("6")) {
                     System.out.println("Logging out...");
                     loggedIn = false;
                 } else {
@@ -135,7 +138,8 @@ public class ConsoleMenu {
                 if (choice.equals("1")) handleViewInventory();
                 else if (choice.equals("2")) handleAddInventoryItem();
                 else if (choice.equals("3")) handleUpdateStock();
-                else if (choice.equals("4")) {
+                else if (choice.equals("4")) handleDeleteInventoryItem();
+                else if (choice.equals("5")) {
                     System.out.println("Logging out...");
                     loggedIn = false;
                 } else {
@@ -228,7 +232,7 @@ public class ConsoleMenu {
             return;
         }
 
-        System.out.println("\n--- LAUNDRY ORDERS ---");
+        System.out.println("\n--- ALL LAUNDRY ORDERS ---");
         for (LaundryOrder o : orders) {
             System.out.println("Order ID: " + o.orderId() + " | Customer ID: " + o.customerId() + " | Service: " + o.serviceType() + " | Weight: " + o.weightKg() + "kg | Total: PHP " + o.totalAmount() + " | Status: " + o.orderStatus());
         }
@@ -254,6 +258,39 @@ public class ConsoleMenu {
             }
         } catch (NumberFormatException e) {
             System.out.println("Invalid input.");
+        }
+    }
+
+    private void handleViewCustomerTransactions() {
+        var customers = customerDao.getAllCustomers();
+        if (customers.isEmpty()) {
+            System.out.println("No customers found.");
+            return;
+        }
+
+        System.out.println("\n--- REGISTERED CUSTOMERS ---");
+        for (Customer c : customers) {
+            System.out.println("ID: " + c.customerId() + " | Name: " + c.firstName() + " " + c.lastName() + " | Contact: " + c.contactNumber());
+        }
+
+        System.out.print("Enter Customer ID to view their transactions: ");
+        try {
+            int customerId = Integer.parseInt(scanner.nextLine());
+            var customerOrders = orderDao.getOrdersByCustomer(customerId);
+
+            if (customerOrders.isEmpty()) {
+                System.out.println("\nNo transaction history found for Customer ID: " + customerId);
+                return;
+            }
+
+            System.out.println("\n--- TRANSACTION HISTORY FOR CUSTOMER ID: " + customerId + " ---");
+            for (LaundryOrder o : customerOrders) {
+                System.out.println("Order ID: " + o.orderId() + " | Service: " + o.serviceType() +
+                        " | Weight: " + o.weightKg() + "kg | Total: PHP " + o.totalAmount() +
+                        " | Status: " + o.orderStatus() + " | Date: " + o.orderDate());
+            }
+        } catch (NumberFormatException e) {
+            System.out.println("Invalid input. Please enter a valid customer ID number.");
         }
     }
 
@@ -316,13 +353,13 @@ public class ConsoleMenu {
 
     private void handleAddInventoryItem() {
         try {
-            System.out.print("Enter Item Name : ");
+            System.out.print("Enter Item Name (e.g., Liquid Detergent): ");
             String name = scanner.nextLine();
-            System.out.print("Enter Category (Cleaning Supplies/Detergents): ");
+            System.out.print("Enter Category (e.g., Cleaning Supplies): ");
             String category = scanner.nextLine();
             System.out.print("Enter Initial Quantity: ");
             int qty = Integer.parseInt(scanner.nextLine());
-            System.out.print("Enter Unit of Measure (Stock, Kg, Liters): ");
+            System.out.print("Enter Unit of Measure (e.g., Bottles, kg, Liters): ");
             String unit = scanner.nextLine();
             System.out.print("Enter Reorder Alert Level: ");
             int reorder = Integer.parseInt(scanner.nextLine());
@@ -352,6 +389,21 @@ public class ConsoleMenu {
             }
         } catch (NumberFormatException e) {
             System.out.println("Invalid number input! Please enter valid numbers.");
+        }
+    }
+
+    private void handleDeleteInventoryItem() {
+        handleViewInventory();
+        System.out.print("Enter Item ID to delete: ");
+        try {
+            int itemId = Integer.parseInt(scanner.nextLine());
+            if (inventoryDao.deleteInventoryItem(itemId)) {
+                System.out.println("Inventory item deleted successfully!");
+            } else {
+                System.out.println("Failed to delete. Make sure the Item ID exists.");
+            }
+        } catch (NumberFormatException e) {
+            System.out.println("Invalid number input!");
         }
     }
 }
