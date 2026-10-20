@@ -9,8 +9,14 @@ public class DatabaseConnection {
     private static final String URL = "jdbc:sqlite:magic_wash.db";
 
     public static Connection getConnection() throws SQLException {
-        return DriverManager.getConnection(URL);
+        Connection conn = DriverManager.getConnection(URL);
+        // Enable SQLite Foreign Key constraints on every connection initialization
+        try (Statement stmt = conn.createStatement()) {
+            stmt.execute("PRAGMA foreign_keys = ON;");
+        }
+        return conn;
     }
+
 
     public static void initializeDatabase() {
         try (Connection conn = getConnection(); Statement stmt = conn.createStatement()) {

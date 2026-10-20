@@ -15,76 +15,14 @@ public class ConsoleMenu {
     private final CustomerDao customerDao = new CustomerDao();
     private final OrderDao orderDao = new OrderDao();
     private final InventoryDao inventoryDao = new InventoryDao();
-    private final Scanner scanner = new Scanner(System.in);
+    private final Scanner scanner;
 
-    public void start() {
-        boolean running = true;
-        while (running) {
-            System.out.println("\n=== MAGIC WASH LAUNDRY SYSTEM ===");
-            System.out.println("[1] Register Account");
-            System.out.println("[2] Login");
-            System.out.println("[3] Exit");
-            System.out.print("Select choice: ");
-
-            String choice = scanner.nextLine();
-            switch (choice) {
-                case "1" -> handleRegistration();
-                case "2" -> handleLogin();
-                case "3" -> {
-                    System.out.println("Exiting application. Goodbye!");
-                    running = false;
-                }
-                default -> System.out.println("Invalid choice. Try again.");
-            }
-        }
+    // Constructor accepting the shared Scanner from Authentication
+    public ConsoleMenu(Scanner scanner) {
+        this.scanner = scanner;
     }
 
-    private void handleRegistration() {
-        System.out.print("Enter username: ");
-        String username = scanner.nextLine();
-        System.out.print("Enter password: ");
-        String password = scanner.nextLine();
-        System.out.print("Enter Full Name: ");
-        String fullName = scanner.nextLine();
-
-        System.out.println("Select Role: [1] System Administrator [2] Laundry Staff [3] Inventory Staff");
-        String roleChoice = scanner.nextLine();
-        String role = switch (roleChoice) {
-            case "1" -> "System Administrator";
-            case "2" -> "Laundry Staff";
-            default -> "Inventory Staff";
-        };
-
-        boolean success = userDao.registerUser(username, password, fullName, role);
-        if (success) {
-            System.out.println("Registration successful! Status is currently PENDING admin approval.");
-        } else {
-            System.out.println("Registration failed. Username might already exist.");
-        }
-    }
-
-    private void handleLogin() {
-        System.out.print("Username: ");
-        String username = scanner.nextLine();
-        System.out.print("Password: ");
-        String password = scanner.nextLine();
-
-        User user = userDao.login(username, password);
-        if (user == null) {
-            System.out.println("Invalid username or password.");
-            return;
-        }
-
-        if ("PENDING".equalsIgnoreCase(user.status())) {
-            System.out.println("Login denied. Your account is still pending administrator approval.");
-            return;
-        }
-
-        System.out.println("\nWelcome back, " + user.fullName() + " (" + user.userRole() + ")!");
-        runDashboard(user);
-    }
-
-    private void runDashboard(User user) {
+    public void runDashboard(User user, UserDao sharedUserDao) {
         boolean loggedIn = true;
         while (loggedIn) {
             System.out.println("\n--- Dashboard [" + user.userRole() + "] ---");
@@ -101,7 +39,6 @@ public class ConsoleMenu {
                 System.out.println("[5] Cancel/Delete Pending Order");
                 System.out.println("[6] Logout");
             } else {
-                // Inventory Staff Dashboard Options
                 System.out.println("[1] View Inventory Stock Levels");
                 System.out.println("[2] Add New Inventory Item");
                 System.out.println("[3] Restock / Update Item Quantity");
@@ -113,7 +50,7 @@ public class ConsoleMenu {
             String choice = scanner.nextLine();
 
             if ("System Administrator".equalsIgnoreCase(user.userRole())) {
-                if (choice.equals("1")) handleUserApprovals();
+                if (choice.equals("1")) handleUserApprovals(sharedUserDao);
                 else if (choice.equals("2")) showDailySalesReport();
                 else if (choice.equals("3")) {
                     System.out.println("Logging out...");
@@ -134,7 +71,6 @@ public class ConsoleMenu {
                     System.out.println("Invalid choice. Try again.");
                 }
             } else {
-                // Inventory Staff Actions
                 if (choice.equals("1")) handleViewInventory();
                 else if (choice.equals("2")) handleAddInventoryItem();
                 else if (choice.equals("3")) handleUpdateStock();
@@ -149,8 +85,8 @@ public class ConsoleMenu {
         }
     }
 
-    private void handleUserApprovals() {
-        var pendingUsers = userDao.getPendingUsers();
+    private void handleUserApprovals(UserDao sharedUserDao) {
+        var pendingUsers = sharedUserDao.getPendingUsers();
         if (pendingUsers.isEmpty()) {
             System.out.println("\nNo pending user accounts found.");
             return;
@@ -166,7 +102,7 @@ public class ConsoleMenu {
             int idToApprove = Integer.parseInt(scanner.nextLine());
             if (idToApprove == 0) return;
 
-            boolean success = userDao.approveUser(idToApprove);
+            boolean success = sharedUserDao.approveUser(idToApprove);
             if (success) System.out.println("User account successfully APPROVED!");
             else System.out.println("Failed to approve user.");
         } catch (NumberFormatException e) {
@@ -290,7 +226,7 @@ public class ConsoleMenu {
                         " | Status: " + o.orderStatus() + " | Date: " + o.orderDate());
             }
         } catch (NumberFormatException e) {
-            System.out.println("Invalid input. Please enter a valid customer ID number.");
+            System.out.println("Invalid input.");
         }
     }
 
@@ -370,7 +306,7 @@ public class ConsoleMenu {
                 System.out.println("Failed to add inventory item.");
             }
         } catch (NumberFormatException e) {
-            System.out.println("Invalid number input! Please enter a valid integer for quantity and reorder level.");
+            System.out.println("Invalid number input!");
         }
     }
 
@@ -388,7 +324,7 @@ public class ConsoleMenu {
                 System.out.println("Failed to update stock.");
             }
         } catch (NumberFormatException e) {
-            System.out.println("Invalid number input! Please enter valid numbers.");
+            System.out.println("Invalid number input!");
         }
     }
 
