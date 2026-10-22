@@ -50,9 +50,12 @@ public class ConsoleMenu {
             String choice = scanner.nextLine();
 
             if ("System Administrator".equalsIgnoreCase(user.userRole())) {
-                if (choice.equals("1")) handleUserApprovals(sharedUserDao);
-                else if (choice.equals("2")) showDailySalesReport();
-                else if (choice.equals("3")) {
+                if (choice.equals("1")) {
+                    AdminMenu adminMenu = new AdminMenu(scanner);
+                    adminMenu.displayAdminMenu(sharedUserDao);
+                } else if (choice.equals("2")) {
+                    showDailySalesReport();
+                } else if (choice.equals("3")) {
                     System.out.println("Logging out...");
                     loggedIn = false;
                 } else {

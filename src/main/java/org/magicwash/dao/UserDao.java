@@ -2,6 +2,8 @@ package org.magicwash.dao;
 
 import org.magicwash.model.User;
 import java.sql.*;
+import java.util.ArrayList;
+import java.util.List;
 
 public class UserDao {
 
@@ -9,12 +11,10 @@ public class UserDao {
         String query = "INSERT INTO users (username, password_hash, full_name, user_role, status) VALUES (?, ?, ?, ?, 'PENDING')";
         try (Connection conn = DatabaseConnection.getConnection();
              PreparedStatement pstmt = conn.prepareStatement(query)) {
-
             pstmt.setString(1, username);
-            pstmt.setString(2, passwordHash); // Note: Hash your password in production (e.g., BCrypt)
+            pstmt.setString(2, passwordHash);
             pstmt.setString(3, fullName);
             pstmt.setString(4, role);
-
             pstmt.executeUpdate();
             return true;
         } catch (SQLException e) {
@@ -27,10 +27,8 @@ public class UserDao {
         String query = "SELECT * FROM users WHERE username = ? AND password_hash = ?";
         try (Connection conn = DatabaseConnection.getConnection();
              PreparedStatement pstmt = conn.prepareStatement(query)) {
-
             pstmt.setString(1, username);
             pstmt.setString(2, password);
-
             try (ResultSet rs = pstmt.executeQuery()) {
                 if (rs.next()) {
                     return new User(
@@ -48,15 +46,35 @@ public class UserDao {
         }
         return null;
     }
-    // 1. Get all users with PENDING status
-    public java.util.List<org.magicwash.model.User> getPendingUsers() {
-        java.util.List<org.magicwash.model.User> pendingList = new java.util.ArrayList<>();
-        String query = "SELECT * FROM users WHERE status = 'PENDING'";
 
+    public List<User> getAllUsers() {
+        List<User> userList = new ArrayList<>();
+        String query = "SELECT * FROM users";
         try (Connection conn = DatabaseConnection.getConnection();
              PreparedStatement pstmt = conn.prepareStatement(query);
              ResultSet rs = pstmt.executeQuery()) {
+            while (rs.next()) {
+                userList.add(new User(
+                        rs.getInt("user_id"),
+                        rs.getString("username"),
+                        rs.getString("password_hash"),
+                        rs.getString("full_name"),
+                        rs.getString("user_role"),
+                        rs.getString("status")
+                ));
+            }
+        } catch (SQLException e) {
+            System.err.println("Error fetching all users: " + e.getMessage());
+        }
+        return userList;
+    }
 
+    public List<User> getPendingUsers() {
+        List<User> pendingList = new ArrayList<>();
+        String query = "SELECT * FROM users WHERE status = 'PENDING'";
+        try (Connection conn = DatabaseConnection.getConnection();
+             PreparedStatement pstmt = conn.prepareStatement(query);
+             ResultSet rs = pstmt.executeQuery()) {
             while (rs.next()) {
                 pendingList.add(new User(
                         rs.getInt("user_id"),
@@ -73,7 +91,6 @@ public class UserDao {
         return pendingList;
     }
 
-    // 2. Approve a user by ID
     public boolean approveUser(int userId) {
         String query = "UPDATE users SET status = 'APPROVED' WHERE user_id = ?";
         try (Connection conn = DatabaseConnection.getConnection();
