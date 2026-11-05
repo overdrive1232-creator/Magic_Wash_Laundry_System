@@ -51,7 +51,7 @@ public class ConsoleMenu {
 
             if ("System Administrator".equalsIgnoreCase(user.userRole())) {
                 if (choice.equals("1")) {
-                    AdminMenu adminMenu = new AdminMenu(scanner);
+                    AdminMenu adminMenu = new AdminMenu(scanner, user);
                     adminMenu.displayAdminMenu(sharedUserDao);
                 } else if (choice.equals("2")) {
                     showDailySalesReport();
