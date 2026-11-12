@@ -1,5 +1,6 @@
 package org.magicwash.ui;
 
+import org.magicwash.dao.ActivityLogDao;
 import org.magicwash.dao.CustomerDao;
 import org.magicwash.dao.InventoryDao;
 import org.magicwash.dao.OrderDao;
@@ -57,6 +58,8 @@ public class ConsoleMenu {
                     showDailySalesReport();
                 } else if (choice.equals("3")) {
                     System.out.println("Logging out...");
+                    ActivityLogDao activityLogDao = new ActivityLogDao();
+                    activityLogDao.logAction(user.userId(), "USER_LOGOUT", "User " + user.username() + " (ID: " + user.userId() + ") logged out.");
                     loggedIn = false;
                 } else {
                     System.out.println("Invalid choice. Try again.");
@@ -64,11 +67,13 @@ public class ConsoleMenu {
             } else if ("Laundry Staff".equalsIgnoreCase(user.userRole())) {
                 if (choice.equals("1")) handleAddCustomer();
                 else if (choice.equals("2")) handleCreateOrder(user.userId());
-                else if (choice.equals("3")) handleViewAndUpdateOrders();
+                else if (choice.equals("3")) handleViewAndUpdateOrders(user.userId());
                 else if (choice.equals("4")) handleViewCustomerTransactions();
                 else if (choice.equals("5")) handleDeleteOrder();
                 else if (choice.equals("6")) {
                     System.out.println("Logging out...");
+                    ActivityLogDao activityLogDao = new ActivityLogDao();
+                    activityLogDao.logAction(user.userId(), "USER_LOGOUT", "User " + user.username() + " (ID: " + user.userId() + ") logged out.");
                     loggedIn = false;
                 } else {
                     System.out.println("Invalid choice. Try again.");
@@ -80,6 +85,8 @@ public class ConsoleMenu {
                 else if (choice.equals("4")) handleDeleteInventoryItem();
                 else if (choice.equals("5")) {
                     System.out.println("Logging out...");
+                    ActivityLogDao activityLogDao = new ActivityLogDao();
+                    activityLogDao.logAction(user.userId(), "USER_LOGOUT", "User " + user.username() + " (ID: " + user.userId() + ") logged out.");
                     loggedIn = false;
                 } else {
                     System.out.println("Invalid choice. Try again.");
@@ -164,7 +171,7 @@ public class ConsoleMenu {
         }
     }
 
-    private void handleViewAndUpdateOrders() {
+    private void handleViewAndUpdateOrders(int userId) {
         var orders = orderDao.getAllOrders();
         if (orders.isEmpty()) {
             System.out.println("No orders found.");
@@ -190,7 +197,7 @@ public class ConsoleMenu {
                 default -> "Pending";
             };
 
-            if (orderDao.updateOrderStatus(orderId, newStatus)) {
+            if (orderDao.updateOrderStatus(orderId, newStatus, userId)) {
                 System.out.println("Order status updated successfully!");
             } else {
                 System.out.println("Failed to update status.");

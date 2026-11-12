@@ -1,6 +1,8 @@
 package org.magicwash.ui;
 
+import org.magicwash.dao.ActivityLogDao;
 import org.magicwash.dao.UserDao;
+import org.magicwash.model.ActivityLog;
 import org.magicwash.model.User;
 
 import java.util.List;
@@ -23,7 +25,8 @@ public class AdminMenu {
             System.out.println("[2] View Pending Registrations");
             System.out.println("[3] Approve User Account");
             System.out.println("[4] Update User Role & Status");
-            System.out.println("[5] Back to Main Menu / Logout");
+            System.out.println("[5] View System Audit Logs");
+            System.out.println("[6] Back to Main Menu / Logout");
             System.out.print("Select choice: ");
 
             String choice = scanner.nextLine();
@@ -32,7 +35,8 @@ public class AdminMenu {
                 case "2" -> viewPendingRegistrations(userDao);
                 case "3" -> approveUserAccount(userDao);
                 case "4" -> updateUserRoleAndStatus(userDao);
-                case "5" -> {
+                case "5" -> viewSystemAuditLogs();
+                case "6" -> {
                     System.out.println("Returning to main menu...");
                     managing = false;
                 }
@@ -75,6 +79,8 @@ public class AdminMenu {
         boolean success = userDao.approveUser(targetId);
         if (success) {
             System.out.println("Success! User ID " + targetId + " status has been updated from PENDING to APPROVED.");
+            ActivityLogDao logDao = new ActivityLogDao();
+            logDao.logAction(currentAdmin.userId(), "USER_APPROVED", "Admin [" + currentAdmin.userId() + "] approved account for User ID " + targetId);
         } else {
             System.out.println("Failed to approve account in database.");
         }
@@ -108,6 +114,8 @@ public class AdminMenu {
         boolean success = userDao.updateUserRoleAndStatus(targetId, newRole, newStatus);
         if (success) {
             System.out.println("Success! User ID " + targetId + " has been updated to Role: " + newRole.toUpperCase() + " and Status: " + newStatus.toUpperCase());
+            ActivityLogDao logDao = new ActivityLogDao();
+            logDao.logAction(currentAdmin.userId(), "USER_UPDATED", "Admin [" + currentAdmin.userId() + "] changed role of User " + targetId + " to " + newRole.toUpperCase() + " (" + newStatus.toUpperCase() + ")");
         } else {
             System.out.println("Failed to update user in the database.");
         }
@@ -135,7 +143,6 @@ public class AdminMenu {
             if (input.equals("2") || input.equals("LAUNDRY STAFF")) return "Laundry Staff";
             if (input.equals("3") || input.equals("INVENTORY STAFF")) return "Inventory Staff";
 
-            // Allow general custom roles if needed, or enforce specific ones
             if (!input.isEmpty()) {
                 return input;
             }
@@ -178,5 +185,68 @@ public class AdminMenu {
             );
         }
         System.out.println("==========================================================================");
+    }
+
+    private void viewSystemAuditLogs() {
+        ActivityLogDao logDao = new ActivityLogDao();
+        boolean viewing = true;
+        while (viewing) {
+            System.out.println("\n=== SYSTEM AUDIT LOGS ===");
+            System.out.println("[1] View All System Logs");
+            System.out.println("[2] Filter Logs by User ID");
+            System.out.println("[3] Clear Historical Logs");
+            System.out.println("[4] Back to Admin Menu");
+            System.out.print("Select choice: ");
+
+            String choice = scanner.nextLine().trim();
+            switch (choice) {
+                case "1" -> printAuditLogTable(logDao.getAllLogs(), "ALL SYSTEM AUDIT LOGS");
+                case "2" -> {
+                    int filterUserId = readIntInput("Enter User ID to filter logs (or 0 to cancel): ");
+                    if (filterUserId != 0) {
+                        printAuditLogTable(logDao.getLogsByUserId(filterUserId), "AUDIT LOGS FOR USER ID: " + filterUserId);
+                    }
+                }
+                case "3" -> {
+                    System.out.print("Are you sure you want to clear all logs? (YES/NO): ");
+                    if ("YES".equalsIgnoreCase(scanner.nextLine().trim())) {
+                        logDao.clearHistoricalLogs();
+                        logDao.logAction(currentAdmin.userId(), "LOGS_CLEARED", "Admin [" + currentAdmin.userId() + "] cleared historical audit logs.");
+                        System.out.println("Historical logs cleared.");
+                    }
+                }
+                case "4" -> viewing = false;
+                default -> System.out.println("Invalid choice. Please try again.");
+            }
+        }
+    }
+
+    private void printAuditLogTable(List<ActivityLog> logs, String title) {
+        System.out.println("\n================================================================================================");
+        System.out.println("                                   " + title);
+        System.out.println("================================================================================================");
+        if (logs.isEmpty()) {
+            System.out.println(" [ No audit logs recorded ]");
+            System.out.println("================================================================================================");
+            return;
+        }
+
+        String formatString = "%-5s | %-8s | %-18s | %-35s | %-20s%n";
+        System.out.printf(formatString, "ID", "USER ID", "ACTION TYPE", "DESCRIPTION", "TIMESTAMP");
+        System.out.println("------------------------------------------------------------------------------------------------");
+
+        for (ActivityLog log : logs) {
+            String desc = log.description().length() > 35
+                    ? log.description().substring(0, 32) + "..."
+                    : log.description();
+            System.out.printf(formatString,
+                    log.id(),
+                    log.userId(),
+                    log.actionType(),
+                    desc,
+                    log.timestamp()
+            );
+        }
+        System.out.println("================================================================================================");
     }
 }

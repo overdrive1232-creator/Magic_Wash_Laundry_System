@@ -25,6 +25,8 @@ public class OrderDao {
             pstmt.setDouble(4, totalAmount);
             pstmt.setInt(5, userId);
             pstmt.executeUpdate();
+            ActivityLogDao activityLogDao = new ActivityLogDao();
+            activityLogDao.logAction(userId, "ORDER_CREATED", "Created Laundry Order for Customer ID " + customerId + " - Total: P" + totalAmount);
             return true;
         } catch (SQLException e) {
             System.err.println("Error creating order: " + e.getMessage());
@@ -82,12 +84,15 @@ public class OrderDao {
         return orders;
     }
 
-    public boolean updateOrderStatus(int orderId, String newStatus) {
+    public boolean updateOrderStatus(int orderId, String newStatus, int userId) {
         String query = "UPDATE laundry_orders SET order_status = ? WHERE order_id = ?";
         try (Connection conn = DatabaseConnection.getConnection();
              PreparedStatement pstmt = conn.prepareStatement(query)) {
             pstmt.setString(1, newStatus);
             pstmt.setInt(2, orderId);
+            // Inside dao/OrderDao.java -> updateOrderStatus() method (after successful update)
+            ActivityLogDao activityLogDao = new ActivityLogDao();
+            activityLogDao.logAction(userId, "ORDER_STATUS_UPDATED", "Updated Laundry Order #" + orderId + " status to " + newStatus.toUpperCase());
             return pstmt.executeUpdate() > 0;
         } catch (SQLException e) {
             System.err.println("Error updating order status: " + e.getMessage());

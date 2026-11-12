@@ -77,6 +77,17 @@ public class DatabaseInitializer {
                     FOREIGN KEY (user_id) REFERENCES users(user_id)
                 );
             """);
+            String createActivityLogsTable = """
+    CREATE TABLE IF NOT EXISTS activity_logs (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        user_id INTEGER NOT NULL,
+        action_type TEXT NOT NULL,
+        description TEXT NOT NULL,
+        timestamp DATETIME DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE CASCADE
+    );
+""";
+            stmt.execute(createActivityLogsTable);
 
             System.out.println("[Database Initializer] All required tables verified and initialized successfully.");
         } catch (SQLException e) {

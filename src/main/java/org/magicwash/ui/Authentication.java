@@ -1,5 +1,6 @@
 package org.magicwash.ui;
 
+import org.magicwash.dao.ActivityLogDao;
 import org.magicwash.dao.UserDao;
 import org.magicwash.model.User;
 
@@ -83,6 +84,10 @@ public class Authentication {
             System.out.println("Login denied. Your account is still pending administrator approval.");
             return;
         }
+
+        // Audit Log Entry for Successful Login
+        ActivityLogDao activityLogDao = new ActivityLogDao();
+        activityLogDao.logAction(user.userId(), "USER_LOGIN", "User " + user.username() + " (ID: " + user.userId() + ") logged in.");
 
         System.out.println("\nLogin successful! Welcome, " + user.fullName() + " (" + user.userRole() + ")");
         // Route user to role-based UI menu passing shared userDao instance
